@@ -9,7 +9,7 @@
 #     - git checkout tags/1.0.0-RC1
 #     - ln -sf `pwd`/bin/casperjs /usr/local/bin/casperjs
 #   - Run it!
-#     - casperjs browser.coffee http://level04.stripe-ctf.com/
+#     - casperjs browser.js http://level04.stripe-ctf.com/
 #     - (change above path to match the actual CTF path)
 #
 # Will exit(0) if success, exit(other) if failure
@@ -21,7 +21,7 @@ utils = require 'utils';
 fs = require 'fs';
 
 if (!casper.cli.has(0)) {
-  console.log('Usage: browser.coffee <url to visit>');
+  console.log('Usage: browser.js <url to visit>');
   casper.exit(1);
 }
 

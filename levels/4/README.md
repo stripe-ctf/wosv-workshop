@@ -20,5 +20,5 @@ The password for **karma_fountain**'s account will give you access to Level 5.
 
 We used [CapserJS](http://casperjs.org/) on top of
 [PhantomJS](http://phantomjs.org/) to power the **karma_fountain** user. Run
-`capserjs browser.coffee http://localhost:4567` to start it up. It expects to
+`capserjs browser.js http://localhost:4567` to start it up. It expects to
 find the password from the filesystem `public_html/password.txt`.
