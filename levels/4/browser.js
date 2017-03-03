@@ -1,55 +1,50 @@
-# Install instructions:
-#   - Install phantomjs 1.5+
-#     - wget http://phantomjs.googlecode.com/files/phantomjs-1.6.1-linux-x86_64-dynamic.tar.bz2
-#     - tar -xjvf phantomjs-1.6.1-linux-x86_64-dynamic.tar.bz2
-#     - ln -s phantomjs-1.6.1-linux-x86_64-dynamic/bin/phantomjs /usr/bin/local
-#   - Install casperjs
-#     - git clone git://github.com/n1k0/casperjs.git
-#     - cd casperjs
-#     - git checkout tags/1.0.0-RC1
-#     - ln -sf `pwd`/bin/casperjs /usr/local/bin/casperjs
-#   - Run it!
-#     - casperjs browser.js http://level04.stripe-ctf.com/
-#     - (change above path to match the actual CTF path)
-#
-# Will exit(0) if success, exit(other) if failure
-# Profit!
+// Install instructions:
+//  - Install phantomjs 1.5+
+//    - brew install phantomjs (or similar)
+//    - http://phantomjs.org/download.html
+//   - Install casperjs
+//     - http://docs.casperjs.org/en/latest/installation.html
+//   - Run it!
+//     - casperjs browser.js http://localhost:4567
+//
+// Will exit(0) if success, exit(other) if failure
+// Profit!
 
-casper = require('casper').create();
-system = require 'system';
-utils = require 'utils';
-fs = require 'fs';
+var casper = require('casper').create();
+var system = require('system');
+var utils = require('utils');
+var fs = require('fs');
 
 if (!casper.cli.has(0)) {
   console.log('Usage: browser.js <url to visit>');
   casper.exit(1);
 }
 
-password = fs.open('public_html/password.txt', 'r').read().trim();
+var password = fs.open('password.txt', 'r').read().trim();
 
-page_address = casper.cli.get(0);
-console.log("Page address is: #{page_address}");
+var page_address = casper.cli.get(0);
+console.log('Page address is: ' + page_address);
 
 casper.start(page_address, function() {
-  # Fill and submit the login form
+  // Fill and submit the login form
   console.log('Filling the login form...');
-  @fill('form', {username: 'karma_fountain', password: password}, true);
+  this.fill('form', {username: 'karma_fountain', password: password}, true);
 });
 
 casper.then(function() {
-  # Log the page title.
+  // Log the page title.
   console.log('On the main page')
 
-  page_title = @getTitle();
-  page_url = @getCurrentUrl();
-  console.log("Page title is: #{page_title} (url: #{page_url})");
+  var page_title = this.getTitle();
+  var page_url = this.getCurrentUrl();
+  console.log('Page title is: ' + page_title + '(url: ' + page_url + ')');
 
-  credits = @evaluate(function() {
+  var credits = this.evaluate(function() {
     return document.querySelectorAll('p')[1].innerHTML;
   });
 
-  credits_left = credits.match(/-?\d+/);
-  console.log("Guard Llama has #{credits_left} credits left");
+  var credits_left = credits.match(/-?\d+/);
+  console.log('Guard Llama has ' + credits_left + ' credits left');
 });
 
 casper.run(function() {
