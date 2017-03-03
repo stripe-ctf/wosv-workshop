@@ -15,40 +15,45 @@
 # Will exit(0) if success, exit(other) if failure
 # Profit!
 
-casper = require('casper').create()
-system = require 'system'
-utils = require 'utils'
-fs = require 'fs'
+casper = require('casper').create();
+system = require 'system';
+utils = require 'utils';
+fs = require 'fs';
 
+if (!casper.cli.has(0)) {
+  console.log('Usage: browser.coffee <url to visit>');
+  casper.exit(1);
+}
 
-if not casper.cli.has(0)
-    console.log 'Usage: browser.coffee <url to visit>'
-    casper.exit 1
+password = fs.open('public_html/password.txt', 'r').read().trim();
 
-password = fs.open('public_html/password.txt', 'r').read().trim()
+page_address = casper.cli.get(0);
+console.log("Page address is: #{page_address}");
 
-page_address = casper.cli.get(0)
-console.log "Page address is: #{page_address}"
-
-casper.start page_address, ->
+casper.start(page_address, function() {
   # Fill and submit the login form
-  console.log 'Filling the login form...'
-  @fill "form", {username: 'karma_fountain', password: password}, true
+  console.log('Filling the login form...');
+  @fill('form', {username: 'karma_fountain', password: password}, true);
+});
 
-casper.then ->
+casper.then(function() {
   # Log the page title.
-  console.log "On the main page"
+  console.log('On the main page')
 
-  page_title = @getTitle()
-  page_url = @getCurrentUrl()
-  console.log "Page title is: #{page_title} (url: #{page_url})"
+  page_title = @getTitle();
+  page_url = @getCurrentUrl();
+  console.log("Page title is: #{page_title} (url: #{page_url})");
 
-  credits = @evaluate ->
-    return document.querySelectorAll('p')[1].innerHTML
+  credits = @evaluate(function() {
+    return document.querySelectorAll('p')[1].innerHTML;
+  });
 
-  credits_left = credits.match /-?\d+/
-  console.log "Guard Llama has #{credits_left} credits left"
+  credits_left = credits.match(/-?\d+/);
+  console.log("Guard Llama has #{credits_left} credits left");
+});
 
-casper.run ->
-  console.log "Running!"
-  casper.exit 0
+casper.run(function() {
+  console.log('Running!');
+  casper.exit(0);
+});
+
