@@ -1,95 +1,119 @@
-#!/usr/bin/env bundle exec ruby
-#
-# Welcome to the Secret Safe!
-#
-# - users.db stores authentication info with the schema:
-#
-# CREATE TABLE users (
-#   id VARCHAR(255) PRIMARY KEY AUTOINCREMENT,
-#   username VARCHAR(255),
-#   password_hash VARCHAR(255),
-#   salt VARCHAR(255)
-# );
-#
-# - For extra security, the dictionary of secrets lives
-#   data/secrets.json (so a compromise of the database won't
-#   compromise the secrets themselves)
-
+#!/usr/bin/env ruby
 require 'rubygems'
 require 'bundler/setup'
 
+require 'logger'
+require 'uri'
+
+require 'restclient'
 require 'sinatra'
-require 'sqlite3'
 
-require_relative './generate_data'
+$log = Logger.new(STDERR)
+$log.level = Logger::INFO
 
-class SecretSrv < Sinatra::Base
-  set :environment, :production
-  enable :sessions # FIXME: is this necessary?
+module DomainAuthenticator
+  class DomainAuthenticatorSrv < Sinatra::Base
+    set :environment, :production
 
-  # Use persistent entropy file
-  entropy_file = 'entropy.dat'
-  unless File.exists?(entropy_file)
-    File.open(entropy_file, 'w') do |f|
-      f.write(OpenSSL::Random.random_bytes(24))
-    end
-  end
-  set :session_secret, File.read(entropy_file)
-
-  # Generate test data when running locally
-  data_dir = File.join(File.dirname(__FILE__), 'data')
-  if !File.exist?(data_dir)
-    Dir.mkdir(data_dir)
-    DataGenerator.main(data_dir, 'dummy-password', 'dummy-proof', 'dummy-plans')
-  end
-
-  secrets = JSON.parse(File.read(File.join((data_dir), 'secrets.json')))
-
-  get '/' do
-    user_id = session[:user_id]
-    if user_id.nil?
-      File.read('index.html')
+    # Run with the production file on the server
+    if File.exists?('production')
+      PASSWORD_HOSTS = /^level05-\d+\.stripe-ctf\.com$/
+      ALLOWED_HOSTS = /\.stripe-ctf\.com$/
     else
-      secret = secrets[user_id.to_s]
-      "Welcome back! Your secret is #{secret} <a href='./logout'>Log out</a>\n"
+      PASSWORD_HOSTS = /^localhost$/
+      ALLOWED_HOSTS = //
     end
-  end
+    PASSWORD = File.read('password.txt').strip
+    enable :sessions
 
-  post '/login' do
-    username = params[:username]
-    password = params[:password]
-
-    return "Must provide username\n" if !username
-    return "Must provide password\n" if !password
-
-    # Fetch the username, password hash, and salt from the database
-    db = SQLite3::Database.new(File.join(data_dir, 'users.db'))
-    query = "SELECT id, password_hash, salt FROM users " +
-            "WHERE username = '#{username}' LIMIT 1"
-    res = db.execute(query)
-
-    return "There's no such user #{username}!\n" if res.empty?
-    user_id, password_hash, salt = res.first
-
-    # Calculate whether the provided password was correct
-    calculated_hash = Digest::SHA256.hexdigest(password + salt)
-
-    if calculated_hash != password_hash
-      return "That's not the password for #{username}!\n"
-    else
-      session[:user_id] = user_id
-      redirect '/'
+    # Use persistent entropy file
+    entropy_file = 'entropy.dat'
+    unless File.exists?(entropy_file)
+      File.open(entropy_file, 'w') do |f|
+        f.write(OpenSSL::Random.random_bytes(24))
+      end
     end
-  end
+    set :session_secret, File.read(entropy_file)
 
-  get '/logout' do
-    session.clear
-    redirect '/'
+    get '/*' do
+      output = <<EOF
+<p>
+  Welcome to the Domain Authenticator. Please authenticate as a user from
+  your domain of choice.
+</p>
+
+<form action="" method="POST">
+<p>Pingback URL: <input type="text" name="pingback" /></p>
+<p>Username: <input type="text" name="username" /></p>
+<p>Password: <input type="password" name="password" /></p>
+<p><input type="submit" value="Submit"></p>
+</form>
+EOF
+
+      user = session[:auth_user]
+      host = session[:auth_host]
+      if user && host
+        output += "<p> You are authenticated as #{user}@#{host}. </p>"
+        if host =~ PASSWORD_HOSTS
+          output += "<p> Since you're a user of a password host and all,"
+          output += " you deserve to know this password: #{PASSWORD} </p>"
+        end
+      end
+
+      output
+    end
+
+    post '/*' do
+      pingback = params[:pingback]
+      username = params[:username]
+      password = params[:password]
+
+      pingback = "http://#{pingback}" unless pingback.include?('://')
+
+      host = URI.parse(pingback).host
+      unless host =~ ALLOWED_HOSTS
+        return "Host not allowed: #{host}" \
+               " (allowed authentication hosts are #{ALLOWED_HOSTS.inspect})"
+      end
+
+      begin
+        body = perform_authenticate(pingback, username, password)
+      rescue StandardError => e
+        return "An unknown error occurred while requesting #{pingback}: #{e}"
+      end
+
+      if authenticated?(body)
+        session[:auth_user] = username
+        session[:auth_host] = host
+        return "Remote server responded with: #{body}." \
+               " Authenticated as #{username}@#{host}!"
+      else
+        session[:auth_user] = nil
+        session[:auth_host] = nil
+        sleep(1) # prevent abuse
+        return "Remote server responded with: #{body}." \
+               " Unable to authenticate as #{username}@#{host}."
+      end
+    end
+
+    def perform_authenticate(url, username, password)
+      $log.info("Sending request to #{url}")
+      response = RestClient.post(url, {:password => password,
+                                       :username => username})
+      body = response.body
+
+      $log.info("Server responded with: #{body}")
+      body
+    end
+
+    def authenticated?(body)
+      body =~ /[^\w]AUTHENTICATED[^\w]*$/
+    end
   end
 end
 
 def main
-  SecretSrv.run!
+  DomainAuthenticator::DomainAuthenticatorSrv.run!
 end
 
 if $0 == __FILE__

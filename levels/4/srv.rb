@@ -1,28 +1,39 @@
 #!/usr/bin/env ruby
-require 'yaml'
-require 'set'
-
 require 'rubygems'
 require 'bundler/setup'
 
+require 'rack/utils'
+require 'rack/csrf'
+require 'json'
 require 'sequel'
 require 'sinatra'
 
-module KarmaTrader
+module Streamer
   PASSWORD = File.read('password.txt').strip
-  STARTING_KARMA = 500
-  KARMA_FOUNTAIN = 'karma_fountain'
 
   # Only needed in production
   URL_ROOT = File.read('url_root.txt').strip rescue ''
 
   module DB
     def self.db_file
-      'karma.db'
+      'streamer.db'
     end
 
     def self.conn
       @conn ||= Sequel.sqlite(db_file)
+    end
+
+    def self.safe_insert(table, key_values)
+      key_values.each do |key, value|
+        # Just in case people try to exfiltrate
+        # level07-password-holder's password
+        if value.kind_of?(String) &&
+            (value.include?('"') || value.include?("'"))
+          raise "Value has unsafe characters"
+        end
+      end
+
+      conn[table].insert(key_values)
     end
 
     def self.init
@@ -33,28 +44,38 @@ module KarmaTrader
         primary_key :id
         String :username
         String :password
-        Integer :karma
         Time :last_active
       end
 
-      conn.create_table(:transfers) do
+      conn.create_table(:posts) do
         primary_id :id
-        String :from
-        String :to
-        Integer :amount
+        String :user
+        String :title
+        String :body
+        Time :time
       end
 
-      # Karma Fountain has infinite karma, so just set it to -1
-      conn[:users].insert(
-        :username => KarmaTrader::KARMA_FOUNTAIN,
-        :password => KarmaTrader::PASSWORD,
-        :karma => -1,
-        :last_active => Time.now.utc
-        )
+      conn[:users].insert(:username => 'level07-password-holder',
+        :password => Streamer::PASSWORD,
+        :last_active => Time.now.utc)
+
+      conn[:posts].insert(:user => 'level07-password-holder',
+        :title => 'Hello World',
+        :body => "Welcome to Streamer, the most streamlined way of sharing
+updates with your friends!
+
+One great feature of Streamer is that no password resets are needed. I, for
+example, have a very complicated password (including apostrophes, quotes, you
+name it!). But I remember it by clicking my name on the right-hand side and
+seeing what my password is.
+
+Note also that Streamer can run entirely within your corporate firewall. My
+machine, for example, can only talk directly to the Streamer server itself!",
+        :time => Time.now.utc)
     end
   end
 
-  class KarmaSrv < Sinatra::Base
+  class StreamerSrv < Sinatra::Base
     set :environment, :production
     enable :sessions
 
@@ -67,32 +88,46 @@ module KarmaTrader
     end
     set :session_secret, File.read(entropy_file)
 
+    use Rack::Csrf, :raise => true
+
     helpers do
       def absolute_url(path)
-        KarmaTrader::URL_ROOT + path
+        Streamer::URL_ROOT + path
       end
+
+      # Insert an hidden tag with the anti-CSRF token into your forms.
+      def csrf_tag
+        Rack::Csrf.csrf_tag(env)
+      end
+
+      # Return the anti-CSRF token
+      def csrf_token
+        Rack::Csrf.csrf_token(env)
+      end
+
+      # Return the field name which will be looked for in the requests.
+      def csrf_field
+        Rack::Csrf.csrf_field
+      end
+
+      include Rack::Utils
+      alias_method :h, :escape_html
     end
 
-    # Hack to make this work with a URL root
     def redirect(url)
       super(absolute_url(url))
     end
 
-    def die(msg, view)
-      @error = msg
-      halt(erb(view))
-    end
-
     before do
-      refresh_state
+      @user = logged_in_user
       update_last_active
     end
 
-    def refresh_state
-      @user = logged_in_user
-      @transfers = transfers_for_user
-      @trusts_me = trusts_me
-      @registered_users = registered_users
+    def logged_in_user
+      if session[:user]
+        @username = session[:user]
+        @user = DB.conn[:users][:username => @username]
+      end
     end
 
     def update_last_active
@@ -101,44 +136,25 @@ module KarmaTrader
         update(:last_active => Time.now.utc)
     end
 
-    def logged_in_user
-      return unless username = session[:user]
-      DB.conn[:users][:username => username]
-    end
-
-    def transfers_for_user
-      return [] unless @user
-
-      DB.conn[:transfers].where(
-        Sequel.or(:from => @user[:username], :to => @user[:username])
-        )
-    end
-
-    def trusts_me
-      trusts_me = Set.new
-      return trusts_me unless @user
-
-      # Get all the users who have transferred credits to me
-      DB.conn[:transfers].where(:to => @user[:username]).
-        join(:users, :username => :from).each do |result|
-        trusts_me.add(result[:username])
-      end
-
-      trusts_me
+    def recent_posts
+      # Grab the 5 most recent posts
+      DB.conn[:posts].reverse_order(:time).limit(5).to_a.reverse
     end
 
     def registered_users
-      KarmaTrader::DB.conn[:users].reverse_order(:id)
+      DB.conn[:users].reverse_order(:id)
     end
 
-    # KARMA_FOUNTAIN gets all the karma it wants. (Part of why getting
-    # its password would be so great...)
-    def user_has_infinite_karma?
-      @user[:username] == KARMA_FOUNTAIN
+    def die(msg, view)
+      @error = msg
+      halt(erb(view))
     end
 
     get '/' do
       if @user
+        @registered_users = registered_users
+        @posts = recent_posts
+
         erb :home
       else
         erb :login
@@ -156,19 +172,14 @@ module KarmaTrader
         die("Please specify both a username and a password.", :register)
       end
 
-      unless username =~ /^\w+$/
-        die("Invalid username. Usernames must match /^\w+$/", :register)
-      end
-
       unless DB.conn[:users].where(:username => username).count == 0
         die("This username is already registered. Try another one.",
             :register)
       end
 
-      DB.conn[:users].insert(
+      DB.safe_insert(:users,
         :username => username,
         :password => password,
-        :karma => STARTING_KARMA,
         :last_active => Time.now.utc
         )
       session[:user] = username
@@ -192,51 +203,62 @@ module KarmaTrader
       redirect '/'
     end
 
-    get '/transfer' do
-      redirect '/'
-    end
-
-    post '/transfer' do
-      redirect '/' unless @user
-
-      from = @user[:username]
-      to = params[:to]
-      amount = params[:amount]
-
-      die("Please fill out all the fields.", :home) unless amount && to
-      amount = amount.to_i
-      die("Invalid amount specified.", :home) if amount <= 0
-      die("You cannot send yourself karma!", :home) if to == from
-      unless DB.conn[:users][:username => to]
-        die("No user with username #{to.inspect} found.", :home)
-      end
-
-      unless user_has_infinite_karma?
-        if @user[:karma] < amount
-          die("You only have #{@user[:karma]} karma left.", :home)
-        end
-      end
-
-      DB.conn[:transfers].insert(:from => from, :to => to, :amount => amount)
-      DB.conn[:users].where(:username=>from).update(:karma => :karma - amount)
-      DB.conn[:users].where(:username=>to).update(:karma => :karma + amount)
-
-      refresh_state
-      @success = "You successfully transfered #{amount} karma to" +
-                 " #{to.inspect}."
-      erb :home
-    end
-
     get '/logout' do
       session.clear
       redirect '/'
+    end
+
+    get '/user_info' do
+      @password = @user[:password]
+
+      erb :user_info
+    end
+
+    before '/ajax/*' do
+      halt(403, 'Must be logged in!') unless @user
+    end
+
+    get '/ajax/posts' do
+      recent_posts.to_json
+    end
+
+    post '/ajax/posts' do
+      msg = create_post
+      resp = {:response => msg}
+      resp.to_json
+    end
+
+    # Fallback if JS breaks
+    get '/posts' do
+      redirect '/'
+    end
+
+    post '/posts' do
+      create_post if @user
+      redirect '/'
+    end
+
+    def create_post
+      post_body = params[:body]
+      title = params[:title] || 'untitled'
+      if post_body
+        DB.safe_insert(:posts,
+          :user => @user[:username],
+          :title => title,
+          :body => post_body,
+          :time => Time.now.utc
+          )
+        'Successfully added the post!'
+      else
+        'No post body given!'
+      end
     end
   end
 end
 
 def main
-  KarmaTrader::DB.init
-  KarmaTrader::KarmaSrv.run!
+  Streamer::DB.init
+  Streamer::StreamerSrv.run!
 end
 
 if $0 == __FILE__

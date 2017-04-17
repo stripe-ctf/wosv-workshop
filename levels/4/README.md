@@ -1,14 +1,23 @@
 # Level 4
 
-The Karma Trader is the world's best way to reward people for good deeds. You
-can sign up for an account, and start transferring karma to people who you
-think are doing good in the world. In order to ensure you're transferring karma
-only to good people, transferring karma to a user will also reveal your
-password to him or her.
+After Karma Trader from Level 3 was hit with massive karma inflation
+(purportedly due to someone flooding the market with massive quantities of
+karma), the site had to close its doors. All hope was not lost, however, since
+the technology was acquired by a real up-and-comer, Streamer. Streamer is the
+self-proclaimed most steamlined way of sharing updates with your friends.
 
-The very active user **karma_fountain** has infinite karma, making it a ripe
-account to obtain (no one will notice a few extra karma trades here and there).
-The password for **karma_fountain**'s account will give you access to Level 5.
+The Streamer engineers, realizing that security holes had led to the demise of
+Karma Trader, have greatly beefed up the security of their application. Which
+is really too bad, because you've learned that the holder of the password to
+access Level 5, **level05-password-holder**, is the first Streamer user.
+
+In addition, **level05-password-holder** is taking a lot of precautions: his or
+her computer has no network access besides the Streamer server itself, and his
+or her password is a complicated mess, including quotes and apostrophes and the
+like.
+
+Fortunately for you, the Streamer engineers have decided to open-source their
+application so that other people can run their own Streamer instances.
 
 # To run
 
@@ -17,9 +26,9 @@ The password for **karma_fountain**'s account will give you access to Level 5.
 - Run `./srv.rb`
 - Point your browser to [http://localhost:4567](http://localhost:4567)
 
-## Karma Fountain
+## level05-password-holder
 
 We used [CapserJS](http://casperjs.org/) on top of
-[PhantomJS](http://phantomjs.org/) to power the **karma_fountain** user. Run
-`casperjs browser.js http://localhost:4567` to start it up. It expects to
-find the password from the filesystem `public_html/password.txt`.
+[PhantomJS](http://phantomjs.org/) to power the **level05-password-holder**
+user. Run `casperjs browser.js http://localhost:4567` to start it up. It
+expects to find the password from the filesystem `public_html/password.txt`.

@@ -1,15 +1,28 @@
 # Level 3
 
-After the fiasco back in Level 0, management has decided to fortify the Secret
-Safe into an unbreakable solution (kind of like
-[Unbreakable Linux](http://www.oracle.com/us/technologies/linux/ubreakable-enterprise-kernel-linux-173350.html))
-The resulting product is Secret Vault, which is so secure that it requires
-human intervention to add new secrets.
+Many attempts have been made at creating a federated identity system for the
+web (see [OpenID](http://openid.net/), for example). However, none of them have
+been successful. Until today.
 
-A beta version has launched with some interesting secrets
-(including the password to access Level 4).
+The DomainAuthenticator is based off a novel protocol for establishing
+identities. To authenticate to a site, you simply provide it username,
+password, and pingback URL. The site posts your credentials to the pingback
+URL, which returns either "AUTHENTICATED" or "DENIED". If "AUTHENTICATED", the
+site considers you signed in as a user for the pingback domain.
 
-# Run
+We've been using the Stripe CTF DomainAuthenticator instance it to distribute
+the password to access Level 4. If you could only somehow authenticate as a
+user of a level03 machine...
+
+To avoid nefarious exploits, the machine hosting the DomainAuthenticator has
+very locked down network access. It can only make outbound requests to other
+`stripe-ctf.com` servers. Though, you've heard that someone forgot to
+internally firewall off the high ports from the Level 2 server.
+
+*NB: During the actual Stripe CTF, we allowed full network access from the
+Level 3 server to the Level 2 server.*
+
+# To run
 
 - Install bundler: `gem install bundler`
 - Run `bundle install`
