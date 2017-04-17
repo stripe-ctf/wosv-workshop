@@ -11,6 +11,6 @@ A beta version has launched with some interesting secrets
 
 # Run
 
-- Run `pip install flask flup`
-- Run `python secretvault.py`. This will automatically generate test data for you.
-- Visit [http://localhost:5000 ](http://localhost:5000 in your web browser)
+- Run `bundle install`
+- Run `bundle exec ruby srv.rb`
+- Visit [http://localhost:4567](http://localhost:4567 in your web browser)
