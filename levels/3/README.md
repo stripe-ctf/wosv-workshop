@@ -11,6 +11,6 @@ A beta version has launched with some interesting secrets
 
 # Run
 
-- Run `bundle install`
-- Run `bundle exec ruby srv.rb`
-- Visit [http://localhost:4567](http://localhost:4567 in your web browser)
+- Install bundler: `gem install bundler`
+- Run srv.rb: `./srv.rb`
+- Point your browser to [http://localhost:4567](http://localhost:4567)
