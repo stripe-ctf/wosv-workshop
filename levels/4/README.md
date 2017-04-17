@@ -13,7 +13,8 @@ The password for **karma_fountain**'s account will give you access to Level 5.
 # To run
 
 - Install bundler: `gem install bundler`
-- Run srv.rb: `./srv.rb`
+- Run `bundle install`
+- Run `./srv.rb`
 - Point your browser to [http://localhost:4567](http://localhost:4567)
 
 ## Karma Fountain

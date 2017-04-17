@@ -22,7 +22,8 @@ application so that other people can run their own Streamer instances.
 # To run
 
 - Install bundler: `gem install bundler`
-- Run srv.rb: `./srv.rb`
+- Run `bundle install`
+- Run `./srv.rb`
 - Point your browser to [http://localhost:4567](http://localhost:4567)
 
 ## level07-password-holder

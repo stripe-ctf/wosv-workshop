@@ -12,5 +12,6 @@ A beta version has launched with some interesting secrets
 # Run
 
 - Install bundler: `gem install bundler`
-- Run srv.rb: `./srv.rb`
+- Run `bundle install`
+- Run `./srv.rb`
 - Point your browser to [http://localhost:4567](http://localhost:4567)
