@@ -218,8 +218,14 @@ module KarmaTrader
       end
 
       DB.conn[:transfers].insert(:from => from, :to => to, :amount => amount)
-      DB.conn[:users].where(:username=>from).update(:karma => :karma - amount)
-      DB.conn[:users].where(:username=>to).update(:karma => :karma + amount)
+
+      DB.conn.transaction do
+        from_karma = DB.conn[:users][:username=> from][:karma]
+        to_karma = DB.conn[:users][:username=> to][:karma]
+
+        DB.conn[:users].where(:username=>from).update(:karma => from_karma - amount)
+        DB.conn[:users].where(:username=>to).update(:karma => to_karma + amount)
+      end
 
       refresh_state
       @success = "You successfully transfered #{amount} karma to" +
