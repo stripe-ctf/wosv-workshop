@@ -1,25 +1,17 @@
 # Level 2
 
-The Karma Trader is the world's best way to reward people for good deeds. You
-can sign up for an account, and start transferring karma to people who you
-think are doing good in the world. In order to ensure you're transferring karma
-only to good people, transferring karma to a user will also reveal your
-password to him or her.
+After the fiasco back in Level 0, management has decided to fortify the Secret
+Safe into an unbreakable solution (kind of like
+[Unbreakable Linux](http://www.oracle.com/us/technologies/linux/ubreakable-enterprise-kernel-linux-173350.html))
+The resulting product is Secret Vault, which is so secure that it requires
+human intervention to add new secrets.
 
-The very active user **karma_fountain** has infinite karma, making it a ripe
-account to obtain (no one will notice a few extra karma trades here and there).
-The password for **karma_fountain**'s account will give you access to Level 3.
+A beta version has launched with some interesting secrets
+(including the password to access Level 3).
 
-# To run
+# Run
 
 - Install bundler: `gem install bundler`
 - Run `bundle install`
 - Run `./srv.rb`
 - Point your browser to [http://localhost:4567](http://localhost:4567)
-
-## Karma Fountain
-
-We used [CapserJS](http://casperjs.org/) on top of
-[PhantomJS](http://phantomjs.org/) to power the **karma_fountain** user. Run
-`casperjs browser.js http://localhost:4567` to start it up. It expects to
-find the password from the filesystem `public_html/password.txt`.
