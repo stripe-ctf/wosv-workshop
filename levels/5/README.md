@@ -19,12 +19,16 @@ in the request body.
 
 ## The Code
 
-You can use `client.py` to talk to the API, specifying an appropriate API
-endpoint, user id, and secret key. The app itself is `wafflecopter.py`, which
-will use a SQLite database created by `initialize_db.py`. To edit flask
-settings, just create a `local_settings.py` file. The page templates can be
-found under `templates/`.
+You can use `client.rb` to talk to the API, specifying an appropriate API
+endpoint, user id, and secret key. The app itself is `wafflecopter.rb`, which
+will use a SQLite database created by `initialize_db.rb`. The page templates can be
+found under `views/`.
 
-The provided API client requires the `requests` module, which can be installed
-from pip with `pip install requests`. The server requires modules `flask` and
-`bcrypt`, which can be installed from pip with `pip install flask py-bcrypt`.
+
+## To run
+
+- Install bundler: `gem install bundler`
+- Run `bundle install`
+- Run `ruby ./initialize_db.rb`
+- Run `ruby ./wafflecopter.rb`
+- Point your browser to [http://localhost:4567](http://localhost:4567)

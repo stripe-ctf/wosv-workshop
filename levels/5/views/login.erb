@@ -5,13 +5,13 @@
   </head>
   <body>
     <h1>WaffleCopter [beta]</h1>
-    {% if error %}
-    <p style="color: red">{{ error }}</p>
-    {% endif %}
+    <% if @error %>
+    <p style="color: red"><%= @error %></p>
+    <% end %>
     <form action="./login" method="post">
       <table>
         <tr>
-          <td>username:</td><td><input type="text" name="username" /></td>
+          <td>username:</td><td><input type="text" name="name" /></td>
         </tr>
         <tr>
           <td>password:</td><td><input type="password" name="password" /></td>

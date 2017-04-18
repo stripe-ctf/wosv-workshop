@@ -24,13 +24,13 @@
     <h3>API Request Logs</h3>
     <table id=logs>
       <tr><th>date</th><th>path</th><th>body</th></tr>
-      {% for log in logs %}
+      <% for log in @logs %>
       <tr>
-        <td>{{ log['date'].strftime('%F %R:%S') }}</td>
-        <td>{{ log['path'] }}</td>
-        <td><code>{{ log['body'].encode('unicode-escape') }}</code></td>
+        <td><%= log[:date].strftime('%F %R:%S') %></td>
+        <td><%= log[:path] %></td>
+        <td><code><%= log[:body].inspect %></code></td>
       </tr>
-      {% endfor %}
+      <% end %>
     </table>
   </body>
 </html>
