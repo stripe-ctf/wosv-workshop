@@ -40,7 +40,7 @@ class SecretSrv < Sinatra::Base
   data_dir = File.join(File.dirname(__FILE__), 'data')
   if !File.exist?(data_dir)
     Dir.mkdir(data_dir)
-    DataGenerator.main(data_dir, 'dummy-password', 'dummy-proof', 'dummy-plans')
+    DataGenerator.main(data_dir, 'BOB_PASSWORD (WINNER)', 'EVE_PASSWORD', 'MALLORY_PASSWORD')
   end
 
   secrets = JSON.parse(File.read(File.join((data_dir), 'secrets.json')))
