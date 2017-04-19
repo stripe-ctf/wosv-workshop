@@ -3,9 +3,9 @@
     <title>Secret Safe</title>
   </head>
   <body>
-    {{#namespace}}
+    <% if @namespace %>
     <div style="border-width: 2px; border-style: outset; padding: 5px">
-      Showing secrets for <strong>{{namespace}}</strong>:
+      Showing secrets for <strong><%= @namespace %></strong>:
       <table>
         <thead>
           <tr>
@@ -14,31 +14,32 @@
           </tr>
         </thead>
         <tbody>
-          {{#secrets}}
-          <tr>
-            <td>{{ key }}</td>
-            <td>{{ secret }}</td>
-          </tr>
-          {{/secrets}}
-          {{^secrets}}
-          <tr>
-            <td span="2">
-              You have no secrets stored with us. Try using the form below.
-            </td>
-          </tr>
-          {{/secrets}}
+          <% if @secrets && !@secrets.empty? %>
+            <% @secrets.each do |key, secret| %>
+              <tr>
+                <td><%= key %></td>
+                <td><%= secret %></td>
+              </tr>
+            <% end %>
+          <% else %>
+            <tr>
+              <td span="2">
+                You have no secrets stored with us. Try using the form below.
+              </td>
+            </tr>
+          <% end %>
         </tbody>
       </table>
 
       <hr />
     </div>
-    {{/namespace}}
+    <% end %>
 
     <form action="" method="POST">
       <p>
         <label for="namespace">Namespace:</label>
         <input type="text" name="namespace" id="namespace"
-            value="{{ namespace }}" />
+            value="<%= @namespace %>" />
       </p>
       <p>
         <label for="secret_name">Name of your secret:</label>
